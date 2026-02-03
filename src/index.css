@@ -4,7 +4,8 @@
 
 /* Floating particles animation */
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0) translateX(0);
   }
   33% {
@@ -81,7 +82,8 @@
   animation: pop-in 0.3s ease-out;
 }
 
-/* Remove scrollbars globally if needed */
+/* Allow natural scroll so mobile layouts don't clip content */
 body {
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }

@@ -604,7 +604,7 @@ const ComingSoon: React.FC = () => {
   };
 
   return (
-    <div className="min-h-dvh w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white overflow-hidden relative">
+    <div className="min-h-dvh w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#0b1f33] to-[#0ea5e9] text-white overflow-x-hidden overflow-y-auto relative">
       {/* Animated Background Particles */}
       <div className="absolute inset-0 pointer-events-none">
         {BACKGROUND_PARTICLES.map((particle, i) => (
@@ -628,59 +628,57 @@ const ComingSoon: React.FC = () => {
         href="https://kunamix.com"
         target="_blank"
         rel="noopener noreferrer"
-        className="absolute top-4 right-4 z-50 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full hover:bg-white/30 transition-all shadow-lg text-xs md:text-sm font-semibold pointer-events-auto"
+        className="absolute top-4 right-4 z-50 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-full hover:bg-white/25 transition-all shadow-lg text-xs md:text-sm font-semibold pointer-events-auto border border-white/20"
       >
-        🏢 Visit Kunamix
+        Visit Kunamix
       </a>
 
-      <div className="container max-w-4xl w-full flex-1 min-h-0 px-4 sm:px-6 py-4 md:py-6 text-center relative z-10 flex flex-col justify-center overflow-hidden mx-auto">
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 drop-shadow-lg coming-soon-title">
-          🚀 Coming Soon
+      <div className="container max-w-4xl w-full flex-1 min-h-0 px-4 sm:px-6 py-6 md:py-8 text-center relative z-10 flex flex-col justify-center overflow-visible mx-auto gap-3">
+        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-1 drop-shadow-lg coming-soon-title">
+          Coming Soon
         </h1>
-        <p className="text-base md:text-lg lg:text-xl mb-3 md:mb-4 opacity-95 coming-soon-subtitle">
-          We're cooking up something extraordinary. Stay tuned!
+        <p className="text-base md:text-lg lg:text-xl mb-2 opacity-95 coming-soon-subtitle">
+          We are building something new—stay tuned.
         </p>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-3 md:p-6 shadow-2xl coming-soon-fade-in flex-1 flex flex-col overflow-hidden">
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-3 md:p-6 shadow-2xl coming-soon-fade-in flex-1 flex flex-col overflow-visible border border-white/10">
           <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3">
-            🎮 Play While You Wait: Space Defender
+            Play While You Wait: Space Defender
           </h2>
 
           <div className="flex flex-col md:flex-row justify-around gap-2 md:gap-3 mb-3 md:mb-4">
-            <div className="bg-white/20 px-3 md:px-4 py-1 md:py-2 rounded-xl text-xs md:text-sm">
-              <strong>Score:</strong>{" "}
-              <span className="text-lg md:text-xl ml-1">{score}</span>
+            <div className="bg-white/15 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm border border-white/10">
+              <span className="font-semibold">Score</span>
+              <span className="text-lg md:text-xl ml-2 font-semibold">
+                {score}
+              </span>
             </div>
-            <div className="bg-white/20 px-3 md:px-4 py-1 md:py-2 rounded-xl text-xs md:text-sm">
-              <strong>High Score:</strong>{" "}
-              <span className="text-lg md:text-xl ml-1">{highScore}</span>
+            <div className="bg-white/15 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm border border-white/10">
+              <span className="font-semibold">High Score</span>
+              <span className="text-lg md:text-xl ml-2 font-semibold">
+                {highScore}
+              </span>
             </div>
-            <div className="bg-white/20 px-3 md:px-4 py-1 md:py-2 rounded-xl text-xs md:text-sm">
-              <strong>Lives:</strong>
-              <div className="inline-flex gap-1 justify-center items-center ml-1">
-                {[...Array(lives)].map((_, i) => (
-                  <span key={i} className="text-base md:text-lg">
-                    💚
-                  </span>
-                ))}
-              </div>
+            <div className="bg-white/15 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm border border-white/10 flex items-center justify-center gap-2">
+              <span className="font-semibold">Lives</span>
+              <span className="text-lg md:text-xl font-semibold">{lives}</span>
             </div>
           </div>
 
-          <div className="relative flex-1 flex flex-col overflow-hidden w-full max-w-[min(100vw-2rem,640px)] self-center aspect-[3/2] min-h-[260px]">
+          <div className="relative flex-1 flex flex-col overflow-hidden w-full max-w-[min(100vw-2rem,640px)] self-center aspect-3/2 min-h-64">
             <canvas
               ref={canvasRef}
-              className="w-full h-full max-w-full max-h-full bg-gradient-to-b from-[#1a1a2e] to-[#16213e] rounded-2xl shadow-2xl mx-auto block"
+              className="w-full h-full max-w-full max-h-full bg-gradient-to-b from-[#0b1f33] to-[#0a2e42] rounded-2xl shadow-2xl mx-auto block"
               width="600"
               height="400"
               style={{ touchAction: "none" }}
             />
 
             {gameOver && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/90 rounded-2xl game-over-pop-in">
-                <div className="text-center p-6 md:p-10 border-2 border-red-500 rounded-3xl bg-black/80 max-w-md mx-4">
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-red-500 mb-4 md:mb-6">
-                    💥 Game Over!
+              <div className="absolute inset-0 flex items-center justify-center bg-black/85 rounded-2xl game-over-pop-in">
+                <div className="text-center p-6 md:p-10 border border-red-500/70 rounded-3xl bg-black/80 max-w-md mx-4">
+                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-red-400 mb-4 md:mb-6">
+                    Game Over
                   </h2>
                   <p className="text-lg md:text-xl mb-2 md:mb-3">
                     Final Score:{" "}
@@ -696,9 +694,9 @@ const ComingSoon: React.FC = () => {
                   </p>
                   <button
                     onClick={restartGame}
-                    className="px-8 md:px-10 py-3 md:py-4 text-lg md:text-xl font-bold bg-gradient-to-r from-[#667eea] to-[#764ba2] rounded-full hover:scale-105 transition-transform shadow-lg"
+                    className="px-8 md:px-10 py-3 md:py-4 text-lg md:text-xl font-bold bg-gradient-to-r from-[#0ea5e9] to-[#2563eb] rounded-full hover:scale-105 transition-transform shadow-lg"
                   >
-                    🔄 Play Again
+                    Play Again
                   </button>
                 </div>
               </div>
@@ -708,8 +706,8 @@ const ComingSoon: React.FC = () => {
           <div className="mt-2 md:mt-3 text-xs md:text-sm opacity-90">
             <p className="font-semibold mb-1">Controls:</p>
             <p>
-              🖱️ Move Mouse/👆 Touch | 🎯 Click/Tap to shoot | 💫 Destroy
-              asteroids!
+              Move mouse or touch to steer. Click or tap to shoot. Destroy
+              asteroids to score.
             </p>
           </div>
         </div>
