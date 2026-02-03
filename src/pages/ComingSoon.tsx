@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 
 // Type Definitions
 interface Ship {
@@ -39,10 +39,11 @@ interface GameState {
   bullets: Bullet[];
   asteroids: Asteroid[];
   particles: Particle[];
-  mouseX: number;
-  mouseY: number;
+  targetX: number;
+  targetY: number;
   canShoot: boolean;
   animationId: number | null;
+  keys: { [key: string]: boolean };
 }
 
 interface BackgroundParticle {
@@ -152,70 +153,6 @@ const BACKGROUND_PARTICLES: BackgroundParticle[] = [
     animation: "float 18s infinite",
     animationDelay: "11s",
   },
-  {
-    width: "4px",
-    height: "3px",
-    left: "30%",
-    top: "5%",
-    animation: "float 12s infinite",
-    animationDelay: "12s",
-  },
-  {
-    width: "6px",
-    height: "6px",
-    left: "40%",
-    top: "35%",
-    animation: "float 20s infinite",
-    animationDelay: "13s",
-  },
-  {
-    width: "3px",
-    height: "4px",
-    left: "50%",
-    top: "80%",
-    animation: "float 14s infinite",
-    animationDelay: "14s",
-  },
-  {
-    width: "5px",
-    height: "3px",
-    left: "60%",
-    top: "45%",
-    animation: "float 16s infinite",
-    animationDelay: "1s",
-  },
-  {
-    width: "4px",
-    height: "5px",
-    left: "70%",
-    top: "95%",
-    animation: "float 19s infinite",
-    animationDelay: "3s",
-  },
-  {
-    width: "6px",
-    height: "4px",
-    left: "80%",
-    top: "50%",
-    animation: "float 13s infinite",
-    animationDelay: "5s",
-  },
-  {
-    width: "3px",
-    height: "6px",
-    left: "90%",
-    top: "12%",
-    animation: "float 17s infinite",
-    animationDelay: "7s",
-  },
-  {
-    width: "5px",
-    height: "4px",
-    left: "3%",
-    top: "65%",
-    animation: "float 11s infinite",
-    animationDelay: "9s",
-  },
 ];
 
 // Get initial high score from localStorage
@@ -234,25 +171,82 @@ const ComingSoon: React.FC = () => {
   const [lives, setLives] = useState<number>(5);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [finalScore, setFinalScore] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
   // Use refs for game values to avoid re-creating the game loop
   const scoreRef = useRef<number>(0);
   const livesRef = useRef<number>(5);
   const highScoreRef = useRef<number>(getInitialHighScore());
   const gameOverRef = useRef<boolean>(false);
+  const isPlayingRef = useRef<boolean>(false);
 
   const gameStateRef = useRef<GameState>({
     ship: { x: 0, y: 0, width: 30, height: 30 },
     bullets: [],
     asteroids: [],
     particles: [],
-    mouseX: 0,
-    mouseY: 0,
+    targetX: 0,
+    targetY: 0,
     canShoot: true,
     animationId: null,
+    keys: {},
   });
 
+  const startGame = useCallback(() => {
+    setIsPlaying(true);
+    isPlayingRef.current = true;
+    gameOverRef.current = false;
+    scoreRef.current = 0;
+    livesRef.current = 5;
+    setGameOver(false);
+    setScore(0);
+    setLives(5);
+    setFinalScore(0);
+    const state = gameStateRef.current;
+    state.bullets = [];
+    state.asteroids = [];
+    state.particles = [];
+    state.keys = {};
+  }, []);
+
+  const exitGame = useCallback(() => {
+    setIsPlaying(false);
+    isPlayingRef.current = false;
+    const state = gameStateRef.current;
+    if (state.animationId) {
+      cancelAnimationFrame(state.animationId);
+      state.animationId = null;
+    }
+    state.bullets = [];
+    state.asteroids = [];
+    state.particles = [];
+    state.keys = {};
+  }, []);
+
+  const restartGame = useCallback(() => {
+    gameOverRef.current = false;
+    scoreRef.current = 0;
+    livesRef.current = 5;
+    setGameOver(false);
+    setScore(0);
+    setLives(5);
+    setFinalScore(0);
+    const state = gameStateRef.current;
+    state.bullets = [];
+    state.asteroids = [];
+    state.particles = [];
+    const canvas = canvasRef.current;
+    if (canvas) {
+      state.ship.x = canvas.width / 2;
+      state.ship.y = canvas.height - 80;
+      state.targetX = canvas.width / 2;
+      state.targetY = canvas.height - 80;
+    }
+  }, []);
+
   useEffect(() => {
+    if (!isPlaying) return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -261,50 +255,46 @@ const ComingSoon: React.FC = () => {
 
     const state = gameStateRef.current;
 
-    // Set canvas size
+    // Set canvas size to full window
     const resizeCanvas = (): void => {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-
-      // Get available space
-      const parentWidth = parent.clientWidth;
-      const parentHeight = parent.clientHeight;
-
-      // Calculate optimal size maintaining aspect ratio
-      const aspectRatio = 4 / 3;
-      let canvasWidth = parentWidth;
-      let canvasHeight = parentWidth / aspectRatio;
-
-      // If height is too large, constrain by height
-      if (canvasHeight > parentHeight) {
-        canvasHeight = parentHeight;
-        canvasWidth = parentHeight * aspectRatio;
-      }
-
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
       state.ship.x = canvas.width / 2;
-      state.ship.y = canvas.height - 50;
-      state.mouseX = canvas.width / 2;
-      state.mouseY = canvas.height - 50;
+      state.ship.y = canvas.height - 80;
+      state.targetX = canvas.width / 2;
+      state.targetY = canvas.height - 80;
     };
 
     resizeCanvas();
     window.addEventListener("resize", resizeCanvas);
 
+    // Keyboard handlers
+    const handleKeyDown = (e: KeyboardEvent): void => {
+      state.keys[e.key] = true;
+      if (e.key === " " || e.key === "Spacebar") {
+        e.preventDefault();
+        shoot();
+      }
+      if (e.key === "Escape") {
+        exitGame();
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent): void => {
+      state.keys[e.key] = false;
+    };
+
     // Mouse/Touch handlers
     const handleMouseMove = (e: MouseEvent): void => {
-      const rect = canvas.getBoundingClientRect();
-      state.mouseX = e.clientX - rect.left;
-      state.mouseY = e.clientY - rect.top;
+      state.targetX = e.clientX;
+      state.targetY = e.clientY;
     };
 
     const handleTouchMove = (e: TouchEvent): void => {
       e.preventDefault();
-      const rect = canvas.getBoundingClientRect();
       const touch = e.touches[0];
-      state.mouseX = touch.clientX - rect.left;
-      state.mouseY = touch.clientY - rect.top;
+      state.targetX = touch.clientX;
+      state.targetY = touch.clientY;
     };
 
     const shoot = (): void => {
@@ -314,19 +304,24 @@ const ComingSoon: React.FC = () => {
           y: state.ship.y,
           width: 4,
           height: 12,
-          speed: 7,
+          speed: 10,
         });
         state.canShoot = false;
-        setTimeout(() => (state.canShoot = true), 200);
+        setTimeout(() => (state.canShoot = true), 150);
       }
     };
 
     const handleClick = (): void => shoot();
     const handleTouchStart = (e: TouchEvent): void => {
       e.preventDefault();
+      const touch = e.touches[0];
+      state.targetX = touch.clientX;
+      state.targetY = touch.clientY;
       shoot();
     };
 
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
     canvas.addEventListener("click", handleClick);
@@ -335,11 +330,11 @@ const ComingSoon: React.FC = () => {
     // Game functions
     const createAsteroid = (): void => {
       state.asteroids.push({
-        x: Math.random() * (canvas.width - 30),
-        y: -30,
-        width: 25 + Math.random() * 20,
-        height: 25 + Math.random() * 20,
-        speed: 0.5 + Math.random() * 1,
+        x: Math.random() * (canvas.width - 60),
+        y: -60,
+        width: 40 + Math.random() * 40,
+        height: 40 + Math.random() * 40,
+        speed: 1 + Math.random() * 1.5,
         rotation: 0,
         rotationSpeed: (Math.random() - 0.5) * 0.1,
       });
@@ -430,12 +425,46 @@ const ComingSoon: React.FC = () => {
       });
     };
 
+    const SHIP_SPEED = 6;
+
     const update = (): void => {
       if (gameOverRef.current) return;
 
-      // Update ship - slower movement
-      state.ship.x += (state.mouseX - state.ship.x) * 0.05;
-      state.ship.y += (state.mouseY - state.ship.y) * 0.05;
+      // Keyboard movement
+      if (state.keys["ArrowUp"] || state.keys["w"] || state.keys["W"]) {
+        state.ship.y -= SHIP_SPEED;
+      }
+      if (state.keys["ArrowDown"] || state.keys["s"] || state.keys["S"]) {
+        state.ship.y += SHIP_SPEED;
+      }
+      if (state.keys["ArrowLeft"] || state.keys["a"] || state.keys["A"]) {
+        state.ship.x -= SHIP_SPEED;
+      }
+      if (state.keys["ArrowRight"] || state.keys["d"] || state.keys["D"]) {
+        state.ship.x += SHIP_SPEED;
+      }
+
+      // Mouse/touch follow (only if no keys pressed)
+      const anyKeyPressed =
+        state.keys["ArrowUp"] ||
+        state.keys["ArrowDown"] ||
+        state.keys["ArrowLeft"] ||
+        state.keys["ArrowRight"] ||
+        state.keys["w"] ||
+        state.keys["a"] ||
+        state.keys["s"] ||
+        state.keys["d"] ||
+        state.keys["W"] ||
+        state.keys["A"] ||
+        state.keys["S"] ||
+        state.keys["D"];
+
+      if (!anyKeyPressed) {
+        state.ship.x += (state.targetX - state.ship.x) * 0.08;
+        state.ship.y += (state.targetY - state.ship.y) * 0.08;
+      }
+
+      // Clamp ship position
       state.ship.x = Math.max(20, Math.min(canvas.width - 20, state.ship.x));
       state.ship.y = Math.max(20, Math.min(canvas.height - 20, state.ship.y));
 
@@ -488,7 +517,6 @@ const ComingSoon: React.FC = () => {
             setGameOver(true);
             setFinalScore(scoreRef.current);
           }
-          // Ship stays in place - no position reset
         }
       }
 
@@ -500,7 +528,7 @@ const ComingSoon: React.FC = () => {
         return p.life > 0;
       });
 
-      // Bullet collision - iterate backwards to avoid index issues
+      // Bullet collision
       for (let bIndex = state.bullets.length - 1; bIndex >= 0; bIndex--) {
         const bullet = state.bullets[bIndex];
         let bulletHit = false;
@@ -539,20 +567,21 @@ const ComingSoon: React.FC = () => {
       }
 
       // Spawn asteroids
-      if (Math.random() < 0.02) {
+      if (Math.random() < 0.025) {
         createAsteroid();
       }
     };
 
     const draw = (): void => {
-      ctx.fillStyle = "rgba(26, 26, 46, 0.2)";
+      // Clear with space background
+      ctx.fillStyle = "#0a0a1a";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Stars
-      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-      for (let i = 0; i < 50; i++) {
-        const x = (i * 123) % canvas.width;
-        const y = (i * 456 + Date.now() * 0.01) % canvas.height;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.6)";
+      for (let i = 0; i < 100; i++) {
+        const x = (i * 137) % canvas.width;
+        const y = (i * 349 + Date.now() * 0.02) % canvas.height;
         ctx.fillRect(x, y, 1, 1);
       }
 
@@ -563,6 +592,7 @@ const ComingSoon: React.FC = () => {
     };
 
     const gameLoop = (): void => {
+      if (!isPlayingRef.current) return;
       update();
       draw();
       state.animationId = requestAnimationFrame(gameLoop);
@@ -572,6 +602,8 @@ const ComingSoon: React.FC = () => {
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("touchmove", handleTouchMove);
       canvas.removeEventListener("click", handleClick);
@@ -580,29 +612,76 @@ const ComingSoon: React.FC = () => {
         cancelAnimationFrame(state.animationId);
       }
     };
-  }, []); // Empty dependency array - game loop runs once
+  }, [isPlaying, exitGame]);
 
-  const restartGame = (): void => {
-    gameOverRef.current = false;
-    scoreRef.current = 0;
-    livesRef.current = 5;
-    setGameOver(false);
-    setScore(0);
-    setLives(5);
-    setFinalScore(0);
-    const state = gameStateRef.current;
-    state.bullets = [];
-    state.asteroids = [];
-    state.particles = [];
-    const canvas = canvasRef.current;
-    if (canvas) {
-      state.ship.x = canvas.width / 2;
-      state.ship.y = canvas.height - 50;
-      state.mouseX = canvas.width / 2;
-      state.mouseY = canvas.height - 50;
-    }
-  };
+  // Fullscreen game mode
+  if (isPlaying) {
+    return (
+      <div className="fixed inset-0 bg-[#0a0a1a] z-50">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full block"
+          style={{ touchAction: "none" }}
+        />
 
+        {/* HUD - Top Left */}
+        <div className="fixed top-3 left-3 flex items-center gap-3 text-white text-xs font-mono z-50">
+          <span className="bg-black/50 px-2 py-1 rounded">Score: {score}</span>
+          <span className="bg-black/50 px-2 py-1 rounded">
+            Best: {highScore}
+          </span>
+          <span className="bg-black/50 px-2 py-1 rounded">Lives: {lives}</span>
+        </div>
+
+        {/* Exit Button - Top Right */}
+        <button
+          onClick={exitGame}
+          className="fixed top-3 right-3 w-8 h-8 bg-black/50 hover:bg-red-500/70 rounded flex items-center justify-center text-white text-lg font-bold z-50 transition-colors"
+          title="Exit Game (Esc)"
+        >
+          ×
+        </button>
+
+        {/* Game Over Overlay */}
+        {gameOver && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black/85 z-50">
+            <div className="text-center p-8 border border-red-500/50 rounded-2xl bg-black/90 max-w-sm mx-4">
+              <h2 className="text-3xl md:text-4xl font-bold text-red-400 mb-4">
+                Game Over
+              </h2>
+              <p className="text-lg mb-2 text-white">
+                Score: <strong className="text-2xl">{finalScore}</strong>
+              </p>
+              <p className="text-lg mb-6 text-white">
+                Best: <strong className="text-2xl">{highScore}</strong>
+              </p>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={restartGame}
+                  className="px-6 py-3 text-base font-bold bg-gradient-to-r from-[#0ea5e9] to-[#2563eb] rounded-full hover:scale-105 transition-transform text-white"
+                >
+                  Play Again
+                </button>
+                <button
+                  onClick={exitGame}
+                  className="px-6 py-3 text-base font-bold bg-white/10 border border-white/20 rounded-full hover:bg-white/20 transition-colors text-white"
+                >
+                  Exit
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Controls hint */}
+        <div className="fixed bottom-3 left-1/2 -translate-x-1/2 text-white/50 text-xs font-mono z-50">
+          Arrow keys / WASD to move • Space / Click to shoot • Esc to exit
+        </div>
+      </div>
+    );
+  }
+
+  // Coming Soon page with Start Game button
   return (
     <div className="min-h-dvh w-full flex flex-col items-center justify-center bg-gradient-to-br from-[#0f172a] via-[#0b1f33] to-[#0ea5e9] text-white overflow-x-hidden overflow-y-auto relative">
       {/* Animated Background Particles */}
@@ -633,83 +712,40 @@ const ComingSoon: React.FC = () => {
         Visit Kunamix
       </a>
 
-      <div className="container max-w-4xl w-full flex-1 min-h-0 px-4 sm:px-6 py-6 md:py-8 text-center relative z-10 flex flex-col justify-center overflow-visible mx-auto gap-3">
-        <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-1 drop-shadow-lg coming-soon-title">
+      <div className="container max-w-3xl w-full px-4 sm:px-6 py-8 md:py-12 text-center relative z-10 flex flex-col items-center justify-center gap-6">
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold drop-shadow-lg coming-soon-title">
           Coming Soon
         </h1>
-        <p className="text-base md:text-lg lg:text-xl mb-2 opacity-95 coming-soon-subtitle">
-          We are building something new—stay tuned.
+        <p className="text-lg md:text-xl lg:text-2xl opacity-90 coming-soon-subtitle max-w-xl">
+          We are building something new. Stay tuned for updates.
         </p>
 
-        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-3 md:p-6 shadow-2xl coming-soon-fade-in flex-1 flex flex-col overflow-visible border border-white/10">
-          <h2 className="text-lg md:text-xl lg:text-2xl font-semibold mb-2 md:mb-3">
-            Play While You Wait: Space Defender
+        {/* Start Game Card */}
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:p-8 shadow-2xl coming-soon-fade-in border border-white/10 max-w-md w-full mt-4">
+          <h2 className="text-xl md:text-2xl font-semibold mb-3">
+            Space Defender
           </h2>
+          <p className="text-sm md:text-base opacity-80 mb-5">
+            Play a quick game while you wait. Destroy asteroids and survive as
+            long as you can.
+          </p>
 
-          <div className="flex flex-col md:flex-row justify-around gap-2 md:gap-3 mb-3 md:mb-4">
-            <div className="bg-white/15 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm border border-white/10">
-              <span className="font-semibold">Score</span>
-              <span className="text-lg md:text-xl ml-2 font-semibold">
-                {score}
-              </span>
-            </div>
-            <div className="bg-white/15 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm border border-white/10">
-              <span className="font-semibold">High Score</span>
-              <span className="text-lg md:text-xl ml-2 font-semibold">
-                {highScore}
-              </span>
-            </div>
-            <div className="bg-white/15 px-3 md:px-4 py-1.5 md:py-2 rounded-xl text-xs md:text-sm border border-white/10 flex items-center justify-center gap-2">
-              <span className="font-semibold">Lives</span>
-              <span className="text-lg md:text-xl font-semibold">{lives}</span>
-            </div>
-          </div>
-
-          <div className="relative flex-1 flex flex-col overflow-hidden w-full max-w-[min(100vw-2rem,640px)] self-center aspect-3/2 min-h-64">
-            <canvas
-              ref={canvasRef}
-              className="w-full h-full max-w-full max-h-full bg-gradient-to-b from-[#0b1f33] to-[#0a2e42] rounded-2xl shadow-2xl mx-auto block"
-              width="600"
-              height="400"
-              style={{ touchAction: "none" }}
-            />
-
-            {gameOver && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/85 rounded-2xl game-over-pop-in">
-                <div className="text-center p-6 md:p-10 border border-red-500/70 rounded-3xl bg-black/80 max-w-md mx-4">
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-red-400 mb-4 md:mb-6">
-                    Game Over
-                  </h2>
-                  <p className="text-lg md:text-xl mb-2 md:mb-3">
-                    Final Score:{" "}
-                    <strong className="text-2xl md:text-3xl">
-                      {finalScore}
-                    </strong>
-                  </p>
-                  <p className="text-lg md:text-xl mb-6 md:mb-8">
-                    High Score:{" "}
-                    <strong className="text-2xl md:text-3xl">
-                      {highScore}
-                    </strong>
-                  </p>
-                  <button
-                    onClick={restartGame}
-                    className="px-8 md:px-10 py-3 md:py-4 text-lg md:text-xl font-bold bg-gradient-to-r from-[#0ea5e9] to-[#2563eb] rounded-full hover:scale-105 transition-transform shadow-lg"
-                  >
-                    Play Again
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="mt-2 md:mt-3 text-xs md:text-sm opacity-90">
-            <p className="font-semibold mb-1">Controls:</p>
-            <p>
-              Move mouse or touch to steer. Click or tap to shoot. Destroy
-              asteroids to score.
+          {highScore > 0 && (
+            <p className="text-sm opacity-70 mb-4">
+              Your best score: <span className="font-bold">{highScore}</span>
             </p>
-          </div>
+          )}
+
+          <button
+            onClick={startGame}
+            className="w-full px-8 py-4 text-lg font-bold bg-gradient-to-r from-[#0ea5e9] to-[#2563eb] rounded-2xl hover:scale-105 transition-transform shadow-lg"
+          >
+            Start Game
+          </button>
+
+          <p className="text-xs opacity-60 mt-4">
+            Use arrow keys or mouse to move. Click or press space to shoot.
+          </p>
         </div>
       </div>
     </div>
